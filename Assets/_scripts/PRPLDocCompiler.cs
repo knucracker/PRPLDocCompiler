@@ -6,15 +6,16 @@ public class PRPLDocCompiler {
 
     private Main main;
     private int cmdCount;
+    private int cmdTotal = 0;
     private string currentSection;
     private string[] docIndexLines;
     private OrderedDictionaryG<string, List<Tuple<int, string>>> sectionDict;
-    
-    public string resultFile;
+
+    public string resultHTMLFile;
 
     public void MakePRPLDocs(Main main, string srcDir, string outputDir) {
         this.main = main;
-        resultFile = null;
+        resultHTMLFile = null;
         cmdCount = 0;
         currentSection = null;
         sectionDict = new OrderedDictionaryG<string, List<Tuple<int, string>>>();
@@ -30,6 +31,7 @@ public class PRPLDocCompiler {
             outputDir = outputDir + "/";
         }
 
+        // read document index file - each line has filename of next syntax files
         try {
             docIndexLines = System.IO.File.ReadAllLines(srcDir + "prpldocindex.txt");
             foreach (string i in docIndexLines) {
@@ -37,6 +39,9 @@ public class PRPLDocCompiler {
             }
 
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
+/* stringBuilder sb contains final output HTML header, CSS and JavaScript 
+/* */
+            #region HTML/CSS
             sb.Append(@"
 <html>
 <head>
@@ -61,9 +66,9 @@ public class PRPLDocCompiler {
 		background: #f4f4f4;
 	}
 	.command_syntax { padding: 1px 5px; font-size: 110%; font-weight:bold; background-color: #bfc7cf; color: #000000; width:850px; }
-	.command_body{ padding: 1px 1px 50px 15px; }
+	.command_body{ padding: 1px 1px 50px 15px; width:840px; }
 	.example{ padding: 0px 0px 5px 0px; }
-	.description{ padding: 0px 0px 5px 0px; }
+	.description{ padding: 0px 0px 5px 0px; width:840px; }
 	.index {border-spacing:20px;}
 	.index tr{vertical-align:top;}
 	.section {width: 400px; background-color:#d0d0d0; border-spacing:1px;}
@@ -76,15 +81,17 @@ public class PRPLDocCompiler {
 </style >
 </head >
 ");
+            #endregion
 
             GenerateDocSections(sb);
             sb.Append("<br/>");
             sb.Append(sbcommands);
-
             sb.Append(@"</html>");
             System.IO.File.WriteAllText(outputDir + "PRPLDocs.html", sb.ToString());
-            resultFile = outputDir + "PRPLDocs.html";
-            main.LogMessage("COMPLETE: HTML file created: " + resultFile);
+            resultHTMLFile = outputDir + "PRPLDocs.html";
+            main.LogMessage("\n      Processed Total " + cmdTotal + " comands.");
+            Debug.Log("      Processed " + cmdTotal + " comands.");
+            main.LogMessage("COMPLETE: HTML file created: " + resultHTMLFile);
         } catch (Exception e) {
             main.LogMessage("ERROR: " + e.Message);
             main.LogMessage(e.StackTrace);
@@ -94,6 +101,7 @@ public class PRPLDocCompiler {
     private void ProcessDocFile(string srcDir, string sect, System.Text.StringBuilder sbcommands) {
         currentSection = sect;
         string f = srcDir + sect + ".txt";
+        int cmdSubtotal = 0;
         main.LogMessage("Processing File: " + f);
         if (System.IO.File.Exists(f)) {
             string[] lines = System.IO.File.ReadAllLines(f);
@@ -101,8 +109,12 @@ public class PRPLDocCompiler {
                 string l = lines[i].TrimStart();
                 if (l.StartsWith("=CMD")) {
                     i = ProcessDocCMD(sbcommands, lines, i);
+                    cmdSubtotal++;
                 }
             }
+            this.cmdTotal += cmdSubtotal;
+            main.LogMessage("      Processed " + cmdSubtotal + " comands.");
+            Debug.Log("      Processed " + cmdSubtotal + " comands.");
         } else {
             main.LogMessage("File Not Found: " + f);
         }
@@ -135,19 +147,6 @@ public class PRPLDocCompiler {
             sb.Append("</tr>\r\n");
             open = false;
         }
-        /*
-        sb.Append("<tr>\r\n");
-        sb.Append("<td>\r\n");
-        GenerateDocSection(sb, "Vars and Functions");
-        sb.Append("</td>\r\n");
-
-        sb.Append("<td>\r\n");
-        GenerateDocSection(sb, "Logic");
-        sb.Append("</td>\r\n");
-
-        sb.Append("</tr>\r\n");
-        */
-
         sb.Append("</table>");
 
     }
@@ -286,6 +285,8 @@ public class PRPLDocCompiler {
         sb.Append("</div>\r\n");
         return i;
     }
-
-
+    #region constant text
+//    Very long constant strings can go here.
+//    public const string flubberyGibbet = @"Simple text";
+    #endregion
 }
